@@ -7,6 +7,7 @@ local D = G.Data
 D.roster = {}
 D.filtered = {}
 D.pending = false
+D.trailingRequested = false
 
 local function safe(v, fallback)
     if v == nil or v == "" then return fallback or "-" end
@@ -23,11 +24,18 @@ function D:Initialize()
 end
 
 function D:ScheduleRefresh(delay)
-    if self.pending then return end
+    if self.pending then
+        self.trailingRequested = true
+        return
+    end
     self.pending = true
     C_Timer.After(delay or 0.25, function()
         self.pending = false
         self:RefreshRoster()
+        if self.trailingRequested then
+            self.trailingRequested = false
+            self:ScheduleRefresh(0.15)
+        end
     end)
 end
 

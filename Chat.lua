@@ -19,7 +19,10 @@ local function colorName(name, guid)
     end
     local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
     if c then
-        return string.format("|cff%02x%02x%02x%s|r", c.r*255, c.g*255, c.b*255, Ambiguate(name or "?", "none"))
+        local r = math.floor((c.r or 1) * 255 + 0.5)
+        local g = math.floor((c.g or 1) * 255 + 0.5)
+        local b = math.floor((c.b or 1) * 255 + 0.5)
+        return string.format("|cff%02x%02x%02x%s|r", r, g, b, Ambiguate(name or "?", "none"))
     end
     return "|cffffffff"..(Ambiguate(name or "?", "none")).."|r"
 end
