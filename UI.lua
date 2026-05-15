@@ -314,22 +314,8 @@ function UI:RenderRoster()
         UI:RenderRosterRows()
     end)
 
-    local rankFilter = add(c, G.Theme:Button(c, G.Data and (G.Data.rankFilter or "Todos los rangos") or "Todos los rangos", 230, 34))
+    local rankFilter = add(c, G.Theme:Button(c, "Todos los rangos", 230, 34))
     rankFilter:SetPoint("LEFT", search, "RIGHT", 16, 0)
-    rankFilter:SetScript("OnClick", function()
-        if not G.Data then return end
-        local ranks = G.Data:GetRanks()
-        local current = G.Data.rankFilter or "Todos los rangos"
-        local idx = 1
-        for i, v in ipairs(ranks) do if v == current then idx = i break end end
-        idx = idx + 1
-        if idx > #ranks then idx = 1 end
-        G.Data.rankFilter = ranks[idx]
-        if rankFilter.text then rankFilter.text:SetText(ranks[idx]) end
-        G.Data:ApplyFilter(search:GetText(), ranks[idx])
-        UI.rosterOffset = 0
-        UI:RenderRosterRows()
-    end)
 
     local refresh = add(c, G.Theme:Button(c, "↻", 44, 34))
     refresh:SetPoint("LEFT", rankFilter, "RIGHT", 10, 0)
@@ -343,7 +329,7 @@ function UI:RenderRoster()
     tablePanel:EnableMouseWheel(true)
     tablePanel:SetScript("OnMouseWheel", function(_, delta)
         local count = #(G.Data and G.Data.filtered or {})
-        local maxOffset = math.max(0, count - (UI.rosterPerPage or 13))
+        local maxOffset = math.max(0, count - 13)
         UI.rosterOffset = math.max(0, math.min(maxOffset, (UI.rosterOffset or 0) - delta))
         UI:RenderRosterRows()
     end)
@@ -357,7 +343,7 @@ function UI:RenderRoster()
     end
 
     self.rosterRows = {}
-    for i=1,(self.rosterPerPage or 13) do
+    for i=1,13 do
         local row = add(c, G.Theme:Panel(tablePanel))
         row:SetPoint("TOPLEFT", 0, -48 - (i-1)*52)
         row:SetPoint("RIGHT", 0, 0)
@@ -372,28 +358,10 @@ function UI:RenderRoster()
         self.rosterRows[i] = row
     end
 
-    local prev = add(c, G.Theme:Button(c, "‹", 34, 28))
-    prev:SetPoint("BOTTOM", c, "BOTTOM", -70, 26)
-    prev:SetScript("OnClick", function()
-        local per = UI.rosterPerPage or 13
-        UI.rosterOffset = math.max(0, (UI.rosterOffset or 0) - per)
-        UI:RenderRosterRows()
-    end)
-
-    local nextBtn = add(c, G.Theme:Button(c, "›", 34, 28))
-    nextBtn:SetPoint("BOTTOM", c, "BOTTOM", 70, 26)
-    nextBtn:SetScript("OnClick", function()
-        local list = G.Data and G.Data.filtered or {}
-        local per = UI.rosterPerPage or 13
-        local maxOffset = math.max(0, #list - per)
-        UI.rosterOffset = math.min(maxOffset, (UI.rosterOffset or 0) + per)
-        UI:RenderRosterRows()
-    end)
-
     local pager = add(c, c:CreateFontString(nil, "OVERLAY", "GameFontNormal"))
-    self.rosterPager = pager
     pager:SetPoint("BOTTOM", c, "BOTTOM", 0, 26)
     pager:SetTextColor(0.80,0.84,0.90)
+    pager:SetText("Página 1 de 18")
 
     local footer = add(c, c:CreateFontString(nil, "OVERLAY", "GameFontNormal"))
     self.rosterFooter = footer
