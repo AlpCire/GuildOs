@@ -43,6 +43,7 @@ end
 function UI:Initialize()
     self.current = nil
     self.rosterOffset = 0
+    self.rosterPerPage = 13
     self.chatKind = "guild"
     self:CreateMain()
 end
@@ -167,6 +168,10 @@ function UI:RefreshAll(reason)
     self.subtitle:SetText(IsInGuild and IsInGuild() and "Hermandad" or "Sin hermandad")
     self.memberText:SetText(("Miembros |cffffffff%d|r"):format(total))
     self.onlineText:SetText(("Conectados |cff33ff66%d|r"):format(online))
+    local motd = (GetGuildRosterMOTD and GetGuildRosterMOTD()) or ""
+    if motd and motd ~= "" and self.footerText then
+        self.footerText:SetText(("|cffffcc00Mensaje del día:|r %s"):format(motd))
+    end
     self:RefreshChat()
     self:RefreshActivity()
     if self.current == "roster" or reason == "roster" then self:RenderSection() end
@@ -370,6 +375,7 @@ function UI:RenderRosterRows()
     if not self.rosterRows then return end
     local list = G.Data and G.Data.filtered or {}
     local off = self.rosterOffset or 0
+    local per = self.rosterPerPage or 13
     for i, row in ipairs(self.rosterRows) do
         local m = list[off+i]
         if m then
@@ -388,7 +394,14 @@ function UI:RenderRosterRows()
         end
     end
     if self.rosterFooter then
-        self.rosterFooter:SetText(("Mostrando %d - %d de %d miembros"):format(math.min(#list, off+1), math.min(#list, off+12), #list))
+        local startIdx = (#list == 0) and 0 or (off + 1)
+        local endIdx = math.min(#list, off + per)
+        self.rosterFooter:SetText(("Mostrando %d - %d de %d miembros"):format(startIdx, endIdx, #list))
+        if self.rosterPager then
+            local page = (#list == 0) and 1 or math.floor(off / per) + 1
+            local pages = math.max(1, math.ceil(#list / per))
+            self.rosterPager:SetText(("Página %d de %d"):format(page, pages))
+        end
     end
 end
 
