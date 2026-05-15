@@ -78,12 +78,15 @@ function D:RefreshRoster()
     if G.UI and G.UI.RefreshAll then G.UI:RefreshAll("roster") end
 end
 
-function D:ApplyFilter(query)
+function D:ApplyFilter(query, rankFilter)
     self.search = query or self.search or ""
+    self.rankFilter = rankFilter or self.rankFilter or "Todos los rangos"
     local q = string.lower(self.search)
     wipe(self.filtered)
     for _, m in ipairs(self.roster) do
-        if q == "" or string.find(string.lower(m.name or ""), q, 1, true) or string.find(string.lower(m.rank or ""), q, 1, true) or string.find(string.lower(m.class or ""), q, 1, true) then
+        local matchesSearch = q == "" or string.find(string.lower(m.name or ""), q, 1, true) or string.find(string.lower(m.rank or ""), q, 1, true) or string.find(string.lower(m.class or ""), q, 1, true)
+        local matchesRank = self.rankFilter == "Todos los rangos" or (m.rank == self.rankFilter)
+        if matchesSearch and matchesRank then
             table.insert(self.filtered, m)
         end
     end
@@ -93,4 +96,23 @@ function D:GetCounts()
     local total, online = #self.roster, 0
     for _, m in ipairs(self.roster) do if m.online then online = online + 1 end end
     return total, online
+end
+
+
+function D:GetRanks()
+    local ranks = { "Todos los rangos" }
+    local seen = { ["Todos los rangos"] = true }
+    for _, m in ipairs(self.roster) do
+        local r = m.rank or "-"
+        if not seen[r] then
+            seen[r] = true
+            table.insert(ranks, r)
+        end
+    end
+    table.sort(ranks, function(a, b)
+        if a == "Todos los rangos" then return true end
+        if b == "Todos los rangos" then return false end
+        return strcmputf8i(a, b) < 0
+    end)
+    return ranks
 end

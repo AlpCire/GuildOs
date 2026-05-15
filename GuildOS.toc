@@ -1,8 +1,8 @@
 ## Interface: 120005
 ## Title: GuildOS
-## Notes: Interfaz moderna para Hermandad y Comunidades. MVP estable.
+## Notes: Interfaz moderna para Hermandad y Comunidades. MVP estable con reemplazo opcional de tecla J.
 ## Author: OpenAI / WoW Addon Architect
-## Version: 0.6.0
+## Version: 0.7.0
 ## SavedVariables: GuildOS_DB
 ## OptionalDeps: Blizzard_Communities, Blizzard_GuildUI
 
