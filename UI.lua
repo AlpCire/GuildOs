@@ -51,7 +51,7 @@ function UI:CreateMain()
     local T = G.Theme
     local f = CreateFrame("Frame", "GuildOSFrame", UIParent, "BackdropTemplate")
     self.frame = f
-    f:SetSize(1536, 930)
+    f:SetSize(1700, 1100)
     f:SetPoint("CENTER")
     f:SetFrameStrata("HIGH")
     f:EnableMouse(true)
@@ -68,7 +68,7 @@ function UI:CreateMain()
     self.header = header
     header:SetPoint("TOPLEFT", 0, 0)
     header:SetPoint("TOPRIGHT", 0, 0)
-    header:SetHeight(102)
+    header:SetHeight(118)
     header:SetBackdropColor(0.012,0.030,0.050,0.98)
 
     local emblem = add(f, CreateFrame("Frame", nil, header, "BackdropTemplate"))
@@ -106,7 +106,7 @@ function UI:CreateMain()
     self.sidebar = sidebar
     sidebar:SetPoint("TOPLEFT", 12, -104)
     sidebar:SetPoint("BOTTOMLEFT", 12, 48)
-    sidebar:SetWidth(210)
+    sidebar:SetWidth(240)
 
     self.navButtons = {}
     local y = -16
@@ -126,20 +126,20 @@ function UI:CreateMain()
 
     self.content = add(f, T:Panel(f))
     self.content:SetPoint("TOPLEFT", sidebar, "TOPRIGHT", 10, 0)
-    self.content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -520, 48)
+    self.content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -560, 58)
 
     self.right = add(f, T:Panel(f))
     self.right:SetPoint("TOPLEFT", self.content, "TOPRIGHT", 12, 0)
-    self.right:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -12, 48)
+    self.right:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -12, 58)
     self.right:SetWidth(500)
 
     self.footer = add(f, T:Panel(f))
     self.footer:SetPoint("BOTTOMLEFT", 0, 0)
     self.footer:SetPoint("BOTTOMRIGHT", 0, 0)
-    self.footer:SetHeight(46)
+    self.footer:SetHeight(54)
     local foot = self.footer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     foot:SetPoint("LEFT", 28, 0)
-    foot:SetText("|cffffcc00Mensaje del día:|r Usa /gos default para abrir la UI original. /gos replace on/off controla la tecla J.")
+    foot:SetText([[|cffffcc00Mensaje del día:|r "El que no arriesga, no farmea."     |cff9aa3adSe renueva en:|r 28 días]])
     self.footerText = foot
 
     self:BuildRightPanel()
@@ -283,12 +283,24 @@ end
 
 function UI:RenderRoster()
     local c = self.content
-    self:HeaderText(c, "Roster", "Todos los miembros de la hermandad.")
+
+    local tabs = {"Roster", "Notas", "Rangos", "Invitaciones"}
+    self.rosterTabs = {}
+    for i, name in ipairs(tabs) do
+        local b = add(c, G.Theme:Button(c, name, 180, 40))
+        b:SetPoint("TOPLEFT", 14 + (i - 1) * 190, -14)
+        if i == 1 then
+            G.Theme:SetActive(b, true)
+        else
+            b:SetAlpha(0.8)
+        end
+        self.rosterTabs[i] = b
+    end
 
     local search = CreateFrame("EditBox", nil, c, "InputBoxTemplate")
     add(c, search)
-    search:SetSize(400, 32)
-    search:SetPoint("TOPLEFT", 330, -18)
+    search:SetSize(520, 34)
+    search:SetPoint("TOPLEFT", 20, -70)
     search:SetAutoFocus(false)
     search:SetText(G.Data and G.Data.search or "")
     search:SetScript("OnTextChanged", function(e)
@@ -297,50 +309,58 @@ function UI:RenderRoster()
         UI:RenderRosterRows()
     end)
 
-    local refresh = add(c, G.Theme:Button(c, "↻", 44, 32))
-    refresh:SetPoint("LEFT", search, "RIGHT", 12, 0)
+    local rankFilter = add(c, G.Theme:Button(c, "Todos los rangos", 230, 34))
+    rankFilter:SetPoint("LEFT", search, "RIGHT", 16, 0)
+
+    local refresh = add(c, G.Theme:Button(c, "↻", 44, 34))
+    refresh:SetPoint("LEFT", rankFilter, "RIGHT", 10, 0)
     refresh:SetScript("OnClick", function() if G.Data then G.Data:ScheduleRefresh(0) end end)
 
     local tablePanel = add(c, G.Theme:Panel(c))
     self.rosterTable = tablePanel
-    tablePanel:SetPoint("TOPLEFT", 22, -88)
-    tablePanel:SetPoint("BOTTOMRIGHT", -22, 60)
+    tablePanel:SetPoint("TOPLEFT", 12, -112)
+    tablePanel:SetPoint("BOTTOMRIGHT", -12, 64)
     tablePanel:SetBackdropColor(0.015,0.040,0.060,0.82)
     tablePanel:EnableMouseWheel(true)
     tablePanel:SetScript("OnMouseWheel", function(_, delta)
         local count = #(G.Data and G.Data.filtered or {})
-        local maxOffset = math.max(0, count - 12)
+        local maxOffset = math.max(0, count - 13)
         UI.rosterOffset = math.max(0, math.min(maxOffset, (UI.rosterOffset or 0) - delta))
         UI:RenderRosterRows()
     end)
 
-    local headers = {{"Nombre",80},{"Rango",250},{"Clase",400},{"Zona",560},{"Nota",755}}
+    local headers = {{"Nombre",80},{"Rango",260},{"Clase",430},{"Zona",590},{"Nota",820}}
     for _, h in ipairs(headers) do
-        local fs = tablePanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        fs:SetPoint("TOPLEFT", h[2], -18)
+        local fs = tablePanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        fs:SetPoint("TOPLEFT", h[2], -20)
         fs:SetTextColor(1,0.78,0.05)
         fs:SetText(h[1])
     end
 
     self.rosterRows = {}
-    for i=1,12 do
+    for i=1,13 do
         local row = add(c, G.Theme:Panel(tablePanel))
-        row:SetPoint("TOPLEFT", 0, -42 - (i-1)*48)
+        row:SetPoint("TOPLEFT", 0, -48 - (i-1)*52)
         row:SetPoint("RIGHT", 0, 0)
-        row:SetHeight(46)
-        row:SetBackdropColor(0.025,0.065,0.095,0.62)
-        row.dot = dot(row, false); row.dot:SetPoint("LEFT", 22, 0)
-        row.name = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.name:SetPoint("LEFT", 70, 0); row.name:SetWidth(160); row.name:SetJustifyH("LEFT")
-        row.rank = row:CreateFontString(nil, "OVERLAY", "GameFontNormal"); row.rank:SetPoint("LEFT", 240, 0); row.rank:SetWidth(140); row.rank:SetJustifyH("LEFT")
-        row.class = row:CreateFontString(nil, "OVERLAY", "GameFontNormal"); row.class:SetPoint("LEFT", 390, 0); row.class:SetWidth(140); row.class:SetJustifyH("LEFT")
-        row.zone = row:CreateFontString(nil, "OVERLAY", "GameFontNormal"); row.zone:SetPoint("LEFT", 550, 0); row.zone:SetWidth(220); row.zone:SetJustifyH("LEFT")
-        row.note = row:CreateFontString(nil, "OVERLAY", "GameFontNormal"); row.note:SetPoint("LEFT", 760, 0); row.note:SetWidth(200); row.note:SetJustifyH("LEFT")
+        row:SetHeight(50)
+        row:SetBackdropColor(0.025,0.065,0.095,0.48)
+        row.dot = dot(row, false); row.dot:SetPoint("LEFT", 24, 0)
+        row.name = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.name:SetPoint("LEFT", 70, 0); row.name:SetWidth(170); row.name:SetJustifyH("LEFT")
+        row.rank = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.rank:SetPoint("LEFT", 250, 0); row.rank:SetWidth(160); row.rank:SetJustifyH("LEFT")
+        row.class = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.class:SetPoint("LEFT", 420, 0); row.class:SetWidth(160); row.class:SetJustifyH("LEFT")
+        row.zone = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.zone:SetPoint("LEFT", 580, 0); row.zone:SetWidth(230); row.zone:SetJustifyH("LEFT")
+        row.note = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.note:SetPoint("LEFT", 820, 0); row.note:SetWidth(220); row.note:SetJustifyH("LEFT")
         self.rosterRows[i] = row
     end
 
+    local pager = add(c, c:CreateFontString(nil, "OVERLAY", "GameFontNormal"))
+    pager:SetPoint("BOTTOM", c, "BOTTOM", 0, 26)
+    pager:SetTextColor(0.80,0.84,0.90)
+    pager:SetText("Página 1 de 18")
+
     local footer = add(c, c:CreateFontString(nil, "OVERLAY", "GameFontNormal"))
     self.rosterFooter = footer
-    footer:SetPoint("BOTTOMRIGHT", -28, 24)
+    footer:SetPoint("BOTTOMRIGHT", -20, 26)
     footer:SetTextColor(0.70,0.74,0.80)
 
     self:RenderRosterRows()

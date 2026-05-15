@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.1
+- Reworked the main GuildOS layout to closely match the provided mockup (larger canvas, adjusted columns/panels, roster tabs, and pager/footer alignment).
+- Updated roster section visuals and spacing for a more faithful AAA dashboard appearance.
+
+## 0.7.0
+- Added secure optional J key override (`/gos replace on|off`) that opens GuildOS without requiring reload.
+- Added combat-safe delayed binding apply logic (`PLAYER_REGEN_ENABLED`) to avoid protected action issues.
+- Updated addon metadata and docs for the new behavior.
+
 ## 0.6.0
 - Fixed initial section activation in UI navigation.
 - Hardened class color formatting in chat lines.
