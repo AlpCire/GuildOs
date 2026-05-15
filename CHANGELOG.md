@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2
+- Implemented real, navigable content for all sidebar categories (Chat, Actividad, Eventos, Perfiles, Comunidades, Info, Logros, Banco, Reclutamiento, Ajustes).
+- Added data-driven section rendering helpers (guild stats aggregation and top-lists by class/zone/rank).
+- Replaced generic placeholder sections with operational views and safe Blizzard frame actions where APIs are protected.
+
 ## 0.7.1
 - Reworked the main GuildOS layout to closely match the provided mockup (larger canvas, adjusted columns/panels, roster tabs, and pager/footer alignment).
 - Updated roster section visuals and spacing for a more faithful AAA dashboard appearance.
