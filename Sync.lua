@@ -3,6 +3,7 @@ local ADDON, ns = ...
 local G = GuildOS
 G.Sync = G.Sync or {}
 local S = G.Sync
+S.peerTTL = 900
 
 function S:Initialize()
     G:EnsureDB()
@@ -17,6 +18,7 @@ function S:Initialize()
         S:OnMessage(msg, channel, sender)
     end)
     C_Timer.After(3, function() S:Ping() end)
+    C_Timer.NewTicker(60, function() S:CleanupPeers() end)
 end
 
 function S:Send(msg)
@@ -28,6 +30,17 @@ end
 
 function S:Ping()
     self:Send("PING:"..G.VERSION)
+end
+
+
+function S:CleanupPeers()
+    G:EnsureDB()
+    local now = time()
+    for name, p in pairs(G.db.sync.peers or {}) do
+        if type(p) ~= "table" or (p.last and (now - p.last) > self.peerTTL) then
+            G.db.sync.peers[name] = nil
+        end
+    end
 end
 
 function S:OnMessage(msg, channel, sender)

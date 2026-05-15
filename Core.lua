@@ -3,7 +3,7 @@ local ADDON, ns = ...
 GuildOS = GuildOS or {}
 ns.GuildOS = GuildOS
 
-GuildOS.VERSION = "0.5.0"
+GuildOS.VERSION = "0.6.0"
 GuildOS.ADDON_PREFIX = "GUILDOS"
 
 local function Print(msg)

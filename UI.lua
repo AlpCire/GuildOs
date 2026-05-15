@@ -41,7 +41,7 @@ local function dot(parent, online)
 end
 
 function UI:Initialize()
-    self.current = "roster"
+    self.current = nil
     self.rosterOffset = 0
     self.chatKind = "guild"
     self:CreateMain()
