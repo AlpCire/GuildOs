@@ -2,7 +2,7 @@
 ## Title: GuildOS
 ## Notes: Interfaz moderna para Hermandad y Comunidades. MVP estable.
 ## Author: OpenAI / WoW Addon Architect
-## Version: 0.5.0
+## Version: 0.6.1
 ## SavedVariables: GuildOS_DB
 ## OptionalDeps: Blizzard_Communities, Blizzard_GuildUI
 

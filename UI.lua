@@ -41,7 +41,7 @@ local function dot(parent, online)
 end
 
 function UI:Initialize()
-    self.current = "roster"
+    self.current = nil
     self.rosterOffset = 0
     self.chatKind = "guild"
     self:CreateMain()
@@ -51,7 +51,7 @@ function UI:CreateMain()
     local T = G.Theme
     local f = CreateFrame("Frame", "GuildOSFrame", UIParent, "BackdropTemplate")
     self.frame = f
-    f:SetSize(1536, 930)
+    f:SetSize(640, 860)
     f:SetPoint("CENTER")
     f:SetFrameStrata("HIGH")
     f:EnableMouse(true)
@@ -141,15 +141,42 @@ function UI:CreateMain()
     foot:SetPoint("LEFT", 28, 0)
     foot:SetText("|cffffcc00Mensaje del día:|r Usa /gos default para abrir la UI original. /gos replace on/off controla la tecla J.")
     self.footerText = foot
+    foot:SetText("|cffffcc00GuildOS Companion|r: vista extendida sobre la UI oficial de Blizzard.")
 
     self:BuildRightPanel()
     self:RefreshAll()
     self:SetSection("roster")
+    self:AttachCompanionToBlizzard()
 end
 
+
+function UI:AttachCompanionToBlizzard()
+    if self.bridgeHooked then return end
+    if not CommunitiesFrame then return end
+    self.bridgeHooked = true
+    hooksecurefunc(CommunitiesFrame, "Show", function()
+        if G.db and G.db.settings and G.db.settings.showCompanionOnDefault ~= false then
+            if UI.frame and not UI.frame:IsShown() then
+                UI.frame:Show()
+            end
+        end
+    end)
+end
 function UI:Toggle()
     if not self.frame then self:CreateMain() end
-    if self.frame:IsShown() then self.frame:Hide() else self.frame:Show(); if G.Data then G.Data:ScheduleRefresh(0.1) end; self:RefreshAll() end
+    if self.frame:IsShown() then
+        self.frame:Hide()
+    else
+        self.frame:ClearAllPoints()
+        if CommunitiesFrame and CommunitiesFrame:IsShown() then
+            self.frame:SetPoint("TOPLEFT", CommunitiesFrame, "TOPRIGHT", 12, 0)
+        else
+            self.frame:SetPoint("CENTER")
+        end
+        self.frame:Show()
+        if G.Data then G.Data:ScheduleRefresh(0.1) end
+        self:RefreshAll()
+    end
 end
 
 function UI:SetSection(key)

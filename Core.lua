@@ -3,7 +3,7 @@ local ADDON, ns = ...
 GuildOS = GuildOS or {}
 ns.GuildOS = GuildOS
 
-GuildOS.VERSION = "0.5.0"
+GuildOS.VERSION = "0.6.1"
 GuildOS.ADDON_PREFIX = "GUILDOS"
 
 local function Print(msg)
@@ -75,11 +75,14 @@ SLASH_GUILDOS2 = "/guildos"
 SlashCmdList.GUILDOS = function(msg)
     msg = string.lower(strtrim(msg or ""))
     GuildOS:EnsureDB()
-    if msg == "default" then
+    if msg == "default" or msg == "blizzard" then
         if CommunitiesFrame then ShowUIPanel(CommunitiesFrame)
         elseif ToggleGuildFrame then ToggleGuildFrame()
         elseif C_AddOns and C_AddOns.LoadAddOn then C_AddOns.LoadAddOn("Blizzard_Communities"); if CommunitiesFrame then ShowUIPanel(CommunitiesFrame) end
         end
+        return
+    elseif msg == "custom" then
+        if GuildOS.UI then GuildOS.UI:Toggle() end
         return
     elseif msg == "replace on" then
         GuildOS.db.settings.replaceDefault = true
@@ -93,8 +96,8 @@ SlashCmdList.GUILDOS = function(msg)
         if GuildOS.Sync then GuildOS.Sync:Ping() end
         return
     elseif msg == "help" or msg == "ayuda" then
-        Print("/gos abre GuildOS. /gos default abre Hermandad y Comunidades original. /gos replace on/off. /gos sync.")
+        Print("/gos abre la UI oficial. /gos custom abre GuildOS. /gos default abre UI oficial. /gos replace on/off. /gos sync.")
         return
     end
-    if GuildOS.UI then GuildOS.UI:Toggle() end
+    SlashCmdList.GUILDOS("default")
 end
