@@ -8,6 +8,7 @@ D.roster = {}
 D.filtered = {}
 D.pending = false
 D.trailingRequested = false
+D.lastOnlineState = {}
 
 local function safe(v, fallback)
     if v == nil or v == "" then return fallback or "-" end
@@ -74,6 +75,24 @@ function D:RefreshRoster()
         if a.online ~= b.online then return a.online end
         return strcmputf8i(a.name or "", b.name or "") < 0
     end)
+
+    local seen = {}
+    for _, m in ipairs(self.roster) do
+        seen[m.name] = true
+        local prev = self.lastOnlineState[m.name]
+        if prev ~= nil and prev ~= m.online then
+            if m.online then
+                G:AddActivity(string.format("%s se ha conectado.", m.name), "presence")
+            else
+                G:AddActivity(string.format("%s se ha desconectado.", m.name), "presence")
+            end
+        end
+        self.lastOnlineState[m.name] = m.online
+    end
+    for name in pairs(self.lastOnlineState) do
+        if not seen[name] then self.lastOnlineState[name] = nil end
+    end
+
     self:ApplyFilter()
     if G.UI and G.UI.RefreshAll then G.UI:RefreshAll("roster") end
 end

@@ -348,7 +348,7 @@ function UI:RenderRoster()
         UI:RenderRosterRows()
     end)
 
-    local headers = {{"Nombre",80},{"Rango",260},{"Clase",430},{"Zona",590},{"Nota",820}}
+    local headers = {{"Nombre",80},{"Rango",260},{"Clase",430},{"Zona",590},{"Nota",812}}
     for _, h in ipairs(headers) do
         local fs = tablePanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         fs:SetPoint("TOPLEFT", h[2], -20)
@@ -368,7 +368,7 @@ function UI:RenderRoster()
         row.rank = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.rank:SetPoint("LEFT", 250, 0); row.rank:SetWidth(160); row.rank:SetJustifyH("LEFT")
         row.class = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.class:SetPoint("LEFT", 420, 0); row.class:SetWidth(160); row.class:SetJustifyH("LEFT")
         row.zone = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.zone:SetPoint("LEFT", 580, 0); row.zone:SetWidth(230); row.zone:SetJustifyH("LEFT")
-        row.note = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.note:SetPoint("LEFT", 820, 0); row.note:SetWidth(220); row.note:SetJustifyH("LEFT")
+        row.note = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); row.note:SetPoint("LEFT", 820, 0); row.note:SetWidth(190); row.note:SetJustifyH("LEFT")
         self.rosterRows[i] = row
     end
 
@@ -439,26 +439,49 @@ end
 
 function UI:RenderSummary()
     local c = self.content
-    self:HeaderText(c, "Resumen", "Centro de mando de la hermandad.")
-    local total, online = G.Data and G.Data:GetCounts() or 0, 0
+    local stats = self:BuildGuildStats()
+    self:HeaderText(c, "Resumen", "Vista unificada de estado de hermandad, actividad y composición.")
+
     local cards = {
-        {"Miembros", tostring(total)},
-        {"Conectados", tostring(select(2, G.Data:GetCounts()))},
-        {"Peers Sync", tostring(G.db and G.db.sync and G.db.sync.peers and (function() local n=0; for _ in pairs(G.db.sync.peers) do n=n+1 end; return n end)() or 0)},
-        {"Chat guardado", tostring(G.db and G.db.chat and #(G.db.chat.guild or {}) or 0)},
+        {"Miembros", tostring(stats.total)},
+        {"Conectados", tostring(stats.online)},
+        {"Clases", tostring((function() local n=0 for _ in pairs(stats.classes) do n=n+1 end return n end)())},
+        {"Peers Sync", tostring(G.db and G.db.sync and G.db.sync.peers and (function() local n=0 for _ in pairs(G.db.sync.peers) do n=n+1 end return n end)() or 0)},
     }
     for i, card in ipairs(cards) do
         local p = add(c, G.Theme:Panel(c))
-        p:SetSize(190, 100)
-        p:SetPoint("TOPLEFT", 24 + (i-1)*210, -96)
+        p:SetSize(255, 100)
+        p:SetPoint("TOPLEFT", 24 + (i-1)*272, -96)
         local a = p:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         a:SetPoint("TOPLEFT", 16, -18); a:SetTextColor(0.7,0.75,0.82); a:SetText(card[1])
         local b = p:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
         b:SetPoint("BOTTOMLEFT", 16, 18); b:SetTextColor(1,1,1); b:SetText(card[2])
     end
+
+    local left = createInfoPanel(c, 24, -220, 540, 450, "Top clases")
+    local classes = self:TopFromMap(stats.classes, 14)
+    if #classes == 0 then classes = {"Sin datos de clases."} end
+    self:RenderTextList(left, classes)
+
+    local mid = createInfoPanel(c, 590, -220, 544, 450, "Top zonas")
+    local zones = self:TopFromMap(stats.zones, 14)
+    if #zones == 0 then zones = {"Sin datos de zonas."} end
+    self:RenderTextList(mid, zones)
+
+    local act = createInfoPanel(c, 24, -686, 1110, 180, "Actividad reciente")
+    G:EnsureDB()
+    local lines = {}
+    for i=1, math.min(5, #(G.db.activity or {})) do
+        local a = G.db.activity[i]
+        lines[#lines+1] = string.format("|cffffcc00%s|r %s", date("%d/%m %H:%M", a.time or time()), a.text or "")
+    end
+    if #lines == 0 then lines = {"Sin actividad registrada."} end
+    self:RenderTextList(act, lines)
 end
 
-
+function UI:RenderSimpleSection(key)
+    self:RenderFunctionalSection(key)
+end
 
 local function createInfoPanel(parent, x, y, w, h, title)
     local panel = add(parent, G.Theme:Panel(parent))
@@ -472,7 +495,7 @@ local function createInfoPanel(parent, x, y, w, h, title)
 end
 
 function UI:RenderTextList(panel, lines)
-    for i, line in ipairs(lines) do
+    for i, line in ipairs(lines or {}) do
         local fs = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         fs:SetPoint("TOPLEFT", 16, -40 - (i-1)*24)
         fs:SetPoint("RIGHT", -16, 0)
@@ -511,64 +534,82 @@ function UI:RenderFunctionalSection(key)
     local c = self.content
     local stats = self:BuildGuildStats()
     if key == "chat" then
-        self:HeaderText(c, "Chat", "Panel operativo del chat de hermandad. Historial a la derecha.")
-        local p = createInfoPanel(c, 24, -92, 760, 280, "Estado de chat")
-        local guildLines = G.Chat and #(G.Chat:GetLines("guild") or {}) or 0
-        local offLines = G.Chat and #(G.Chat:GetLines("officer") or {}) or 0
-        self:RenderTextList(p, {"Canal actual: "..(self.chatKind == "officer" and "Oficiales" or "Hermandad"), "Líneas guardadas (Hermandad): "..guildLines, "Líneas guardadas (Oficiales): "..offLines, "Tip: usa Enter o botón ➜ en el panel derecho para enviar."})
+        self:HeaderText(c, "Chat", "Historial de hermandad y oficiales sincronizado con eventos reales de chat.")
+        local p = createInfoPanel(c, 24, -92, 1110, 760, "Historial")
+        local kind = self.chatKind or "guild"
+        local lines = G.Chat and G.Chat:GetLines(kind) or {}
+        local out = {}
+        local start = math.max(1, #lines - 26)
+        for i = start, #lines do out[#out+1] = lines[i] end
+        if #out == 0 then out = {"No hay líneas todavía. Escribe en el chat de hermandad para poblar historial."} end
+        self:RenderTextList(p, out)
     elseif key == "actividad" then
-        self:HeaderText(c, "Actividad", "Eventos locales recientes (chat/sync).")
+        self:HeaderText(c, "Actividad", "Eventos locales recientes (chat/sync/conexiones).")
         local p = createInfoPanel(c, 24, -92, 1110, 760, "Timeline")
         G:EnsureDB(); local lines = {}
         for i=1, math.min(24, #(G.db.activity or {})) do local a = G.db.activity[i]; lines[#lines+1] = string.format("|cffffcc00%s|r  %s", date("%d/%m %H:%M", a.time or time()), a.text or "") end
         if #lines == 0 then lines = {"Sin actividad registrada todavía."} end
         self:RenderTextList(p, lines)
     elseif key == "eventos" then
-        self:HeaderText(c, "Eventos", "Vista real de calendario Blizzard.")
-        local p = createInfoPanel(c, 24, -92, 1110, 340, "Acciones")
-        self:RenderTextList(p, {"Abre el calendario oficial para gestionar eventos y RSVP reales.", "GuildOS no replica APIs protegidas del calendario para evitar taint."})
-        local b = add(c, G.Theme:Button(c, "Abrir Calendario", 240, 40)); b:SetPoint("TOPLEFT", 40, -210); b:SetScript("OnClick", function() if ToggleCalendar then ToggleCalendar() end end)
+        self:HeaderText(c, "Eventos", "Eventos próximos de calendario (vista rápida).")
+        local p = createInfoPanel(c, 24, -92, 1110, 620, "Próximos eventos")
+        local lines = {}
+        if C_Calendar and C_Calendar.GetNumDayEvents and C_Calendar.GetDayEvent then
+            for d=0, 14 do
+                local num = C_Calendar.GetNumDayEvents(0, d) or 0
+                for i=1, num do
+                    local ev = C_Calendar.GetDayEvent(0, d, i)
+                    if ev and ev.title then lines[#lines+1] = string.format("+%dd | %s (%s)", d, ev.title, ev.calendarType or "guild") end
+                end
+            end
+        end
+        if #lines == 0 then lines = {"No hay eventos próximos visibles por API en este momento."} end
+        self:RenderTextList(p, lines)
+        local b = add(c, G.Theme:Button(c, "Abrir Calendario", 240, 40)); b:SetPoint("TOPLEFT", 40, -730); b:SetScript("OnClick", function() if ToggleCalendar then ToggleCalendar() end end)
     elseif key == "perfiles" then
-        self:HeaderText(c, "Perfiles", "Datos reales del personaje actual + estado de hermandad.")
+        self:HeaderText(c, "Perfiles", "Datos del personaje actual y estado de hermandad.")
         local p = createInfoPanel(c, 24, -92, 540, 300, "Personaje")
         local lvl = UnitLevel("player") or 0
-        local ilvl = (C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel and C_PaperDollInfo.GetInspectItemLevel("player")) or 0
-        self:RenderTextList(p, {"Nombre: "..(UnitName("player") or "?"), "Clase: "..(select(1, UnitClass("player")) or "?"), "Nivel: "..lvl, "iLvl aprox: "..math.floor(ilvl or 0), "Hermandad: "..(G.Data and G.Data:GetGuildName() or "-")})
-        local p2 = createInfoPanel(c, 590, -92, 544, 300, "Roster")
-        self:RenderTextList(p2, {"Miembros totales: "..stats.total, "Conectados: "..stats.online, "Móvil/Away/DND: "..stats.mobile, "Nivel máximo detectado: "..stats.maxLevel})
+        self:RenderTextList(p, {"Nombre: "..(UnitName("player") or "?"), "Clase: "..(select(1, UnitClass("player")) or "?"), "Nivel: "..lvl, "Hermandad: "..(G.Data and G.Data:GetGuildName() or "-")})
     elseif key == "comunidades" then
-        self:HeaderText(c, "Comunidades", "Integración con panel oficial por seguridad/API.")
-        local b = add(c, G.Theme:Button(c, "Abrir Hermandad y Comunidades oficial", 360, 42)); b:SetPoint("TOPLEFT", 24, -100); b:SetScript("OnClick", function() SlashCmdList.GUILDOS("default") end)
+        self:HeaderText(c, "Comunidades", "Acceso mejorado y directo al panel completo oficial.")
+        local p = createInfoPanel(c, 24, -92, 1110, 620, "Estado")
+        self:RenderTextList(p, {"La API de comunidades no permite un clon completo seguro del panel Blizzard.", "GuildOS prioriza estabilidad y usa integración oficial para navegación completa."})
+        local b = add(c, G.Theme:Button(c, "Abrir Hermandad y Comunidades oficial", 360, 42)); b:SetPoint("TOPLEFT", 24, -730); b:SetScript("OnClick", function() SlashCmdList.GUILDOS("default") end)
     elseif key == "info" then
-        self:HeaderText(c, "Info Hermandad", "Resumen operativo con datos reales de roster.")
+        self:HeaderText(c, "Info Hermandad", "Resumen ampliado de datos reales.")
         local p = createInfoPanel(c, 24, -92, 540, 380, "Métricas")
         local motd = (GetGuildRosterMOTD and GetGuildRosterMOTD()) or "-"
-        self:RenderTextList(p, {"Nombre: "..(G.Data and G.Data:GetGuildName() or "-"), "MOTD: "..motd, "Miembros: "..stats.total, "Conectados: "..stats.online, "Desconectados: "..math.max(0, stats.total - stats.online)})
-        local p2 = createInfoPanel(c, 590, -92, 544, 380, "Top Zonas")
-        local zones = self:TopFromMap(stats.zones, 10); if #zones == 0 then zones = {"Sin datos."} end; self:RenderTextList(p2, zones)
+        self:RenderTextList(p, {"Nombre: "..(G.Data and G.Data:GetGuildName() or "-"), "MOTD: "..motd, "Miembros: "..stats.total, "Conectados: "..stats.online, "Desconectados: "..math.max(0, stats.total - stats.online), "Movil/Away/DND: "..stats.mobile})
     elseif key == "logros" then
-        self:HeaderText(c, "Logros", "Estado real de puntos de logros.")
-        local p = createInfoPanel(c, 24, -92, 1110, 300, "Progreso")
+        self:HeaderText(c, "Logros", "Panel rápido de logros con acceso al panel oficial.")
+        local p = createInfoPanel(c, 24, -92, 1110, 520, "Resumen")
         local ap = GetTotalAchievementPoints and GetTotalAchievementPoints() or 0
-        self:RenderTextList(p, {"Puntos de logro del personaje: "..ap, "Los logros de hermandad se gestionan en el panel oficial de Blizzard."})
+        self:RenderTextList(p, {"Puntos de logro del personaje: "..ap})
+        local b = add(c, G.Theme:Button(c, "Abrir panel de logros", 280, 40)); b:SetPoint("TOPLEFT", 40, -640); b:SetScript("OnClick", function() if ToggleAchievementFrame then ToggleAchievementFrame() end end)
     elseif key == "banco" then
-        self:HeaderText(c, "Banco", "Acceso seguro a información del banco de hermandad.")
-        local p = createInfoPanel(c, 24, -92, 1110, 360, "Acciones")
-        self:RenderTextList(p, {"Para evitar taint y restricciones, la gestión detallada usa el frame oficial.", "GuildOS puede evolucionar a analítica pasiva sobre movimientos permitidos."})
-        local b = add(c, G.Theme:Button(c, "Abrir Banco de Hermandad", 300, 42)); b:SetPoint("TOPLEFT", 40, -220); b:SetScript("OnClick", function() if ToggleGuildBank then ToggleGuildBank() end end)
+        self:HeaderText(c, "Banco", "Estado del banco de hermandad + acceso oficial.")
+        local p = createInfoPanel(c, 24, -92, 1110, 440, "Arcas")
+        local money = (GetGuildBankMoney and GetGuildBankMoney()) or 0
+        local gold = math.floor(money / 10000)
+        local silver = math.floor((money % 10000) / 100)
+        local copper = money % 100
+        self:RenderTextList(p, {string.format("Oro en arcas: |cffffd100%d|r g |cffc7c7cf%d|r s |cffb87333%d|r c", gold, silver, copper)})
+        local b = add(c, G.Theme:Button(c, "Abrir Banco de Hermandad", 300, 42)); b:SetPoint("TOPLEFT", 40, -560); b:SetScript("OnClick", function() if ToggleGuildBank then ToggleGuildBank() end end)
     elseif key == "reclutamiento" then
-        self:HeaderText(c, "Reclutamiento", "Estado real basado en composición actual.")
-        local p = createInfoPanel(c, 24, -92, 1110, 600, "Distribución por clase")
-        local lines = self:TopFromMap(stats.classes, 20); if #lines == 0 then lines = {"Sin datos de roster."} end; self:RenderTextList(p, lines)
-    elseif key == "ajustes" then
-        self:HeaderText(c, "Ajustes", "Configuración, sync y diagnóstico.")
-        local p = createInfoPanel(c, 24, -92, 1110, 700, "Estado")
-        G:EnsureDB(); local lines = {"/gos replace on/off", "/gos sync", "/gos default", "", "Replace tecla J: "..(G.db.settings and G.db.settings.replaceDefault and "ACTIVO" or "INACTIVO"), "Peers detectados:"}
-        for name, peer in pairs(G.db.sync.peers or {}) do lines[#lines+1] = string.format("- %s v%s (hace %ss)", name, tostring(peer.version), time() - (peer.last or time())) end
-        if #lines == 6 then lines[#lines+1] = "- Ninguno" end
+        self:HeaderText(c, "Reclutamiento", "Mensajes internos rápidos y composición actual.")
+        local p = createInfoPanel(c, 24, -92, 1110, 600, "Composición y plantillas")
+        local lines = self:TopFromMap(stats.classes, 14)
+        if #lines == 0 then lines = {"Sin datos de roster."} end
+        table.insert(lines, 1, "Usa: /gos reclutar dps | heal | tank")
         self:RenderTextList(p, lines)
-    else
-        self:HeaderText(c, key, "Sección no reconocida")
+    elseif key == "ajustes" then
+        self:HeaderText(c, "Ajustes", "Configuración, atajos y diagnóstico.")
+        local p = createInfoPanel(c, 24, -92, 1110, 700, "Estado")
+        G:EnsureDB(); local lines = {"/gos replace on/off", "/gos sync", "/gos default", "/gos reclutar dps|heal|tank", "", "Replace tecla J: "..(G.db.settings and G.db.settings.replaceDefault and "ACTIVO" or "INACTIVO"), "Peers detectados:"}
+        for name, peer in pairs(G.db.sync.peers or {}) do lines[#lines+1] = string.format("- %s v%s (hace %ss)", name, tostring(peer.version), time() - (peer.last or time())) end
+        if #lines == 7 then lines[#lines+1] = "- Ninguno" end
+        self:RenderTextList(p, lines)
     end
 end
 

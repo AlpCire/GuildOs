@@ -130,8 +130,21 @@ SlashCmdList.GUILDOS = function(msg)
     elseif msg == "sync" then
         if GuildOS.Sync then GuildOS.Sync:Ping() end
         return
+    elseif msg:match("^reclutar") then
+        local role = msg:match("^reclutar%s+(%a+)$") or "dps"
+        local text = "[GuildOS] "
+        if role == "heal" then
+            text = text .. "Buscamos HEALERS para roster principal. Interesados susurrad a oficiales."
+        elseif role == "tank" then
+            text = text .. "Buscamos TANK para roster principal. Interesados susurrad a oficiales."
+        else
+            text = text .. "Buscamos DPS para roster principal. Interesados susurrad a oficiales."
+        end
+        SendChatMessage(text, "GUILD")
+        GuildOS:AddActivity("Mensaje de reclutamiento enviado ("..role..")", "recruit")
+        return
     elseif msg == "help" or msg == "ayuda" then
-        Print("/gos abre GuildOS. /gos default abre Hermandad y Comunidades original. /gos replace on/off. /gos sync.")
+        Print("/gos abre GuildOS. /gos default abre Hermandad y Comunidades original. /gos replace on/off. /gos sync. /gos reclutar dps|heal|tank.")
         return
     end
     if GuildOS.UI then GuildOS.UI:Toggle() end

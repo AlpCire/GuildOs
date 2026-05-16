@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3
+- Expanded Resumen into a combined dashboard with summary cards, class/zone distributions, and recent activity.
+- Fixed roster right-side overflow by tightening note column placement/width.
+- Improved Chat and Actividad sections to show real captured history/activity data.
+- Added presence activity tracking (member connect/disconnect) from roster state transitions.
+- Added quick calendar event listing, guild bank money view, achievement-panel shortcut, and recruitment quick-message command.
+
 ## 0.7.2
 - Implemented real, navigable content for all sidebar categories (Chat, Actividad, Eventos, Perfiles, Comunidades, Info, Logros, Banco, Reclutamiento, Ajustes).
 - Added data-driven section rendering helpers (guild stats aggregation and top-lists by class/zone/rank).
