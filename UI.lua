@@ -612,3 +612,7 @@ function UI:RenderFunctionalSection(key)
         self:RenderTextList(p, lines)
     end
 end
+
+function UI:RenderSimpleSection(key)
+    self:RenderFunctionalSection(key)
+end
