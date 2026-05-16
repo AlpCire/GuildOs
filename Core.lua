@@ -3,13 +3,48 @@ local ADDON, ns = ...
 GuildOS = GuildOS or {}
 ns.GuildOS = GuildOS
 
-GuildOS.VERSION = "0.6.0"
+GuildOS.VERSION = "0.7.0"
 GuildOS.ADDON_PREFIX = "GUILDOS"
 
 local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff33aaffGuildOS:|r "..tostring(msg))
 end
 GuildOS.Print = Print
+
+local function SetReplaceBinding(enabled)
+    if not InCombatLockdown or not InCombatLockdown() then
+        if enabled then
+            if not GuildOSReplaceBindingButton then
+                local b = CreateFrame("Button", "GuildOSReplaceBindingButton", UIParent, "SecureHandlerClickTemplate")
+                b:SetScript("OnClick", function()
+                    if GuildOS and GuildOS.UI then
+                        GuildOS.UI:Toggle()
+                    end
+                end)
+            end
+            SetOverrideBindingClick(UIParent, true, "J", "GuildOSReplaceBindingButton", "LeftButton")
+        else
+            ClearOverrideBindings(UIParent)
+        end
+        return
+    end
+
+    if not GuildOS._combatBindingFrame then
+        local bf = CreateFrame("Frame")
+        bf:RegisterEvent("PLAYER_REGEN_ENABLED")
+        bf:SetScript("OnEvent", function()
+            if GuildOS and GuildOS.db and GuildOS.db.settings then
+                SetReplaceBinding(GuildOS.db.settings.replaceDefault)
+            end
+        end)
+        GuildOS._combatBindingFrame = bf
+    end
+end
+
+function GuildOS:ApplyReplaceBinding()
+    self:EnsureDB()
+    SetReplaceBinding(self.db.settings.replaceDefault)
+end
 
 function GuildOS:SafeCall(label, fn, ...)
     if type(fn) ~= "function" then return nil end
@@ -64,6 +99,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         if GuildOS.Chat and GuildOS.Chat.Initialize then GuildOS.Chat:Initialize() end
         if GuildOS.Sync and GuildOS.Sync.Initialize then GuildOS.Sync:Initialize() end
         if GuildOS.UI and GuildOS.UI.Initialize then GuildOS.UI:Initialize() end
+        GuildOS:ApplyReplaceBinding()
         Print("cargado. Usa /gos para abrir. /gos default abre la UI original.")
     elseif event == "GUILD_ROSTER_UPDATE" or event == "PLAYER_GUILD_UPDATE" then
         if GuildOS.Data and GuildOS.Data.ScheduleRefresh then GuildOS.Data:ScheduleRefresh() end
@@ -83,17 +119,32 @@ SlashCmdList.GUILDOS = function(msg)
         return
     elseif msg == "replace on" then
         GuildOS.db.settings.replaceDefault = true
-        Print("Reemplazo de tecla J activado tras reload.")
+        GuildOS:ApplyReplaceBinding()
+        Print("Reemplazo de tecla J activado.")
         return
     elseif msg == "replace off" then
         GuildOS.db.settings.replaceDefault = false
+        GuildOS:ApplyReplaceBinding()
         Print("Reemplazo de tecla J desactivado.")
         return
     elseif msg == "sync" then
         if GuildOS.Sync then GuildOS.Sync:Ping() end
         return
+    elseif msg:match("^reclutar") then
+        local role = msg:match("^reclutar%s+(%a+)$") or "dps"
+        local text = "[GuildOS] "
+        if role == "heal" then
+            text = text .. "Buscamos HEALERS para roster principal. Interesados susurrad a oficiales."
+        elseif role == "tank" then
+            text = text .. "Buscamos TANK para roster principal. Interesados susurrad a oficiales."
+        else
+            text = text .. "Buscamos DPS para roster principal. Interesados susurrad a oficiales."
+        end
+        SendChatMessage(text, "GUILD")
+        GuildOS:AddActivity("Mensaje de reclutamiento enviado ("..role..")", "recruit")
+        return
     elseif msg == "help" or msg == "ayuda" then
-        Print("/gos abre GuildOS. /gos default abre Hermandad y Comunidades original. /gos replace on/off. /gos sync.")
+        Print("/gos abre GuildOS. /gos default abre Hermandad y Comunidades original. /gos replace on/off. /gos sync. /gos reclutar dps|heal|tank.")
         return
     end
     if GuildOS.UI then GuildOS.UI:Toggle() end

@@ -7,6 +7,7 @@ GuildOS is a World of Warcraft Retail guild management addon with a modern UI.
 - Guild and officer chat history
 - Lightweight addon sync peer discovery (PING/PONG)
 - Local activity timeline
+- Optional J key override to open GuildOS instead of the default guild panel
 
 ## Install
 1. Copy this folder as `GuildOS` into `_retail_/Interface/AddOns/`.
